@@ -14,3 +14,4 @@
 | 日期 | 主题 | 文件 |
 |------|------|------|
 | 2026-08-14 | Day01: ROW_NUMBER / RANK / DENSE_RANK | sql/day01-window-rank.sql |
+| 2026-08-15 | Day02: SUM/AVG/COUNT窗口聚合 | day02-window-aggregate.sql |
