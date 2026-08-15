@@ -1,6 +1,6 @@
 # ETL Learning Journey
 
-个人 ETL / SQL 学习之路的成长记录仓库。
+这是我日常练习的仓库 —— 个人 ETL / SQL 学习之路的成长记录。
 
 ## 仓库结构
 
