@@ -1,87 +1,88 @@
--- ============================================================================
--- Day 01：窗口排名函数 ROW_NUMBER / RANK / DENSE_RANK / NTILE
--- 适用：PostgreSQL / MySQL 8.0+ / SQL Server / Oracle / BigQuery
--- 核心概念：窗口函数在“不改变原始行数”的前提下，为每行计算一个值
--- ============================================================================
+-- Day01: ROW_NUMBER / RANK / DENSE_RANK
+-- 日期: 2026-08-14
 
--- 示例数据：员工表（部门、姓名、薪资）
-WITH emp AS (
-    SELECT 'A' AS dept, 'Alice'   AS name, 8000 AS salary
-    UNION ALL SELECT 'A', 'Bob',    9000
-    UNION ALL SELECT 'A', 'Charlie', 9000
-    UNION ALL SELECT 'A', 'David',  7500
-    UNION ALL SELECT 'B', 'Eva',   11000
-    UNION ALL SELECT 'B', 'Frank', 9500
-    UNION ALL SELECT 'B', 'Grace', 9500
-)
--- ----------------------------------------------------------------------------
--- 1. ROW_NUMBER()：顺序编号，每条记录唯一，不并列
---    应用：取每组前 N 条、去重
--- ----------------------------------------------------------------------------
-SELECT
-    dept,
-    name,
-    salary,
-    ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn
-FROM emp;
+-- 题1: 查询每个部门工资最高的前3名员工
+CREATE TABLE IF NOT EXISTS employee (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50),
+    department VARCHAR(50),
+    salary DECIMAL(10,2)
+);
 
--- 结果（A 部门示例）：David 是 4 号，即使有同薪也不并列
+INSERT INTO employee (name, department, salary) VALUES
+('张三', '技术部', 8000),
+('李四', '技术部', 9500),
+('王五', '技术部', 9000),
+('赵六', '技术部', 9500),
+('钱七', '市场部', 7000),
+('孙八', '市场部', 8500),
+('周九', '市场部', 7800),
+('吴十', '市场部', 6500),
+('郑十一', '人事部', 6000),
+('冯十二', '人事部', 6200);
 
--- ----------------------------------------------------------------------------
--- 2. RANK()：排名，同薪并列，但会“跳号”（1,1,3）
---    应用：体育比赛式排名
--- ----------------------------------------------------------------------------
-SELECT
-    dept,
-    name,
-    salary,
-    RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS rk
-FROM emp;
+SELECT department, name, salary, salary_rank
+FROM (
+    SELECT department, name, salary,
+           DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS salary_rank
+    FROM employee
+) t
+WHERE salary_rank <= 3
+ORDER BY department, salary_rank;
 
--- 结果（A 部门）：Bob 和 Charlie 同为第 1 名，David 直接是第 3 名
 
--- ----------------------------------------------------------------------------
--- 3. DENSE_RANK()：排名，同薪并列，不跳号（1,1,2）
---    应用：按名次取 Top N（榜单类需求）
--- ----------------------------------------------------------------------------
-SELECT
-    dept,
-    name,
-    salary,
-    DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS dr
-FROM emp;
+-- 题2: 每个用户最近的一笔订单
+CREATE TABLE IF NOT EXISTS orders (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    create_time DATETIME,
+    amount DECIMAL(10,2)
+);
 
--- 结果（A 部门）：Bob 和 Charlie 第 1，David 第 2，连续不跳号
+INSERT INTO orders (user_id, create_time, amount) VALUES
+(1, '2026-08-01 10:30:00', 99.00),
+(1, '2026-08-10 15:45:00', 199.00),
+(1, '2026-08-13 09:20:00', 59.00),
+(2, '2026-07-25 18:00:00', 299.00),
+(2, '2026-08-12 21:35:00', 159.00),
+(3, '2026-06-01 12:00:00', 399.00);
 
--- ----------------------------------------------------------------------------
--- 4. 三者对比（一次查询看差异）
--- ----------------------------------------------------------------------------
-SELECT
-    dept,
-    name,
-    salary,
-    ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn,
-    RANK()       OVER (PARTITION BY dept ORDER BY salary DESC) AS rk,
-    DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS dr
-FROM emp
-ORDER BY dept, salary DESC;
+SELECT user_id, order_id, create_time, amount
+FROM (
+    SELECT user_id, order_id, create_time, amount,
+           ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY create_time DESC) AS rn
+    FROM orders
+) t
+WHERE rn = 1
+ORDER BY user_id;
 
--- ----------------------------------------------------------------------------
--- 5. NTILE(n)：将每组数据均匀分成 n 个桶（分组分桶）
---    应用：数据抽样、评分分档（如按成绩分 5 档）
--- ----------------------------------------------------------------------------
-SELECT
-    dept,
-    name,
-    salary,
-    NTILE(2) OVER (PARTITION BY dept ORDER BY salary DESC) AS bucket
-FROM emp;
 
--- 结果：A 部门 4 人 → 前 2 人桶 1，后 2 人桶 2
+-- 题3: 每个科目成绩排名第2的学生
+CREATE TABLE IF NOT EXISTS scores (
+    student_id INT,
+    subject VARCHAR(50),
+    score DECIMAL(5,2)
+);
 
--- ============================================================================
--- 今日小结
--- 1. 三者核心区别：是否并列（ROW_NUMBER 永不并列）、是否跳号（RANK 跳 / DENSE_RANK 不跳）
--- 2. PARTITION BY 分组，ORDER BY 决定排名顺序（DESC 从高到低）
--- 3. 窗口函数不能直接写在 WHERE 中，需包一层子查询再过滤
--- ============================================================================
+INSERT INTO scores (student_id, subject, score) VALUES
+(1, '语文', 90),
+(2, '语文', 85),
+(3, '语文', 90),
+(4, '语文', 70),
+(1, '数学', 75),
+(2, '数学', 68),
+(3, '数学', 72),
+(4, '数学', 55),
+(1, '英语', 93),
+(2, '英语', 89),
+(3, '英语', 94),
+(4, '英语', 83);
+
+SELECT subject, student_id, score
+FROM (
+    SELECT student_id, subject, score,
+           DENSE_RANK() OVER (PARTITION BY subject ORDER BY score DESC) AS score_rank
+    FROM scores
+) t
+WHERE score_rank = 2
+ORDER BY subject, student_id;
