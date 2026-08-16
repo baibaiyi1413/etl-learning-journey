@@ -40,7 +40,7 @@ FROM (
         amount,
         SUM(amount) OVER (
             ORDER BY sale_date 
-            ROWS BETWEEN INTERVAL 0 YEAR PRECEDING AND CURRENT ROW
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
         ) AS yearly_cumulative
     FROM daily_sales
 ) t
