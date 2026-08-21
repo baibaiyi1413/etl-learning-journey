@@ -16,3 +16,4 @@
 | 2026-08-14 | Day01: ROW_NUMBER / RANK / DENSE_RANK | sql/day01-window-rank.sql |
 | 2026-08-15 | Day02: SUM/AVG/COUNT窗口聚合 | day02-window-aggregate.sql |
 | 2026-08-20 | Day3：LAG/LEAD |Day03-lag-lead.sql|
+| 2026-08-21 | Day4：FIRST_VALUE / LAST_VALUE | day04-first-last-value.sql |
